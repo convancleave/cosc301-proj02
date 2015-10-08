@@ -12,6 +12,42 @@
 #include <signal.h>
 //Conor Oliver, Connor Van Cleave, Matt Condit
 
+// creates array from buffer
+void make_array(char* buf, char** argv, int size) {
+	char* token;
+	char* cop = strdup(buf);
+	
+	int i=0;
+	for (token =strtok(cop,"; "); token!=NULL; token=strtok(NULL,"; ")) {
+		argv[i] = strdup(token);
+		i++;
+	}
+	argv[size] = NULL;
+	free(cop);
+} 
+
+// gets size of array from buffer
+int size_of_array(char* buf) {
+	char* token;
+	char* cop = strdup(buf);
+
+	int count=0;
+	for (token=strtok(cop,"; "); token!=NULL;token=strtok(NULL," ;")) {
+		count++;
+	}
+	return count;
+}
+
+
+
+//test function: print array
+void print_array(char** a, int size) {
+	int i=0;
+	while (i<size) {
+		printf("%s\n", a[i]);
+		i++;
+	}
+}
 
 int main(int argc, char **argv) {
 	char prompt[] = "prompt> ";	
@@ -31,9 +67,16 @@ int main(int argc, char **argv) {
 			}
 			i++;
 		}
+		//
+		int size = size_of_array(buffer);		
+		char** argv = (char**) malloc(sizeof(char*)*(size+1));
+		make_array(buffer,argv,size);		
+
 		
 	}
+	
     return 0;
 }
 
+	
 
