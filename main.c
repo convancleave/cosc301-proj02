@@ -10,6 +10,8 @@
 #include <sys/stat.h>
 #include <poll.h>
 #include <signal.h>
+//Conor Oliver, Connor Van Cleave, Matt Condit
+
 
 int main(int argc, char **argv) {
 	char prompt[] = "prompt> ";	
