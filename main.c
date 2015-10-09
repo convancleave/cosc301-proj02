@@ -208,7 +208,7 @@ int run_par(char** argv, int size) {
 							}	
 					}
 				else	{		//parent process
-					append(pid, 0, cmd, head);
+					head = append(pid, 0, cmd, head);
 					printf("calling append from p\n");
 				}
 			}
