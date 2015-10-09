@@ -71,7 +71,20 @@ int main(int argc, char **argv) {
 		int size = size_of_array(buffer);		
 		char** argv = (char**) malloc(sizeof(char*)*(size+1));
 		make_array(buffer,argv,size);		
+		//		print_array(argv,size);
 
+		int childrv;
+		pid_t pid = fork();
+
+		if (pid==0) {
+			printf("send it");
+			childrv = execv(argv[0], argv);
+		} else {
+			wait(&childrv);
+			printf("Child process finished\n");
+		}
+	
+		
 		
 	}
 	
