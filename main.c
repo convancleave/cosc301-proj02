@@ -61,6 +61,7 @@ int size_of_array2(char* buf) {
 	for (token=strtok(cop," \n\t"); token!=NULL;token=strtok(NULL," \n\t")) {
 		count++;
 	}
+	free(cop);
 	return count;
 }
 
@@ -118,12 +119,20 @@ int run_sequential(char** argv, int size) {
 int run_par(char** argv, int size) {
 	int e=0;	
 	int output = 1;
-	for (int i=0;i<size; i++) {
-			int subsize = size_of_array2(argv[i]);			
-			char** cmd = (char**) malloc(sizeof(char*)*(subsize+1));
-			//printf("%d\n",subsize);
-			make_array2(argv[i],cmd,subsize);
-			//print_array(cmd,subsize);			
+
+	while(1)	{
+		for (int i=0;i<size; i++) {
+		int subsize = size_of_array2(argv[i]);
+		char			
+		char** cmd = (char**) malloc(sizeof(char*)*(subsize+1));
+		//printf("%d\n",subsize);
+		make_array2(argv[i],cmd,subsize);
+		//print_array(cmd,subsize);	
+		}
+
+	}
+
+			
 
 			int childrv;
 			
@@ -191,6 +200,12 @@ int main(int argc, char **argv) {
 		
 		else if (m==1) {
 			m = run_par(argv,size);
+			pid_t pid;
+			int num;
+			/*while ((pid = waitpid(-1, &stat, WNOHANG))>0) {
+				printf("child process finished /n");
+			}*/
+		
 		}
 		
 	

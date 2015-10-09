@@ -12,13 +12,28 @@
 #include <signal.h>
 //Conor Oliver, Connor Van Cleave, Matt Condit
 
-// creates array from buffer
+
+
 void make_array(char* buf, char** argv, int size) {
 	char* token;
 	char* cop = strdup(buf);
 	
 	int i=0;
-	for (token =strtok(cop,"; "); token!=NULL; token=strtok(NULL,"; ")) {
+	
+	for (token=strtok(cop,";"); token!=NULL; token=strtok(NULL,";")){
+		argv[i] = strdup(token);
+		i++;
+	}
+	argv[size] = NULL;
+	free(cop);
+} 
+
+void make_array2(char* buf, char** argv, int size) {
+	char* token;
+	char* cop = strdup(buf);
+	
+	int i=0;
+	for (token=strtok(cop," \n\t"); token!=NULL; token=strtok(NULL," \n\t")){
 		argv[i] = strdup(token);
 		i++;
 	}
@@ -32,13 +47,22 @@ int size_of_array(char* buf) {
 	char* cop = strdup(buf);
 
 	int count=0;
-	for (token=strtok(cop,"; "); token!=NULL;token=strtok(NULL," ;")) {
+	for (token=strtok(cop,";"); token!=NULL;token=strtok(NULL,";")) {
 		count++;
 	}
 	return count;
 }
 
+int size_of_array2(char* buf) {
+	char* token;
+	char* cop = strdup(buf);
 
+	int count=0;
+	for (token=strtok(cop," \n\t"); token!=NULL;token=strtok(NULL," \n\t")) {
+		count++;
+	}
+	return count;
+}
 
 //test function: print array
 void print_array(char** a, int size) {
@@ -49,11 +73,95 @@ void print_array(char** a, int size) {
 	}
 }
 
+int run_sequential(char** argv, int size) {
+	int e=0;	
+	int output = 0;
+	for (int i=0;i<size; i++) {
+			int subsize = size_of_array2(argv[i]);			
+			char** cmd = (char**) malloc(sizeof(char*)*(subsize+1));
+			//printf("%d\n",subsize);
+			make_array2(argv[i],cmd,subsize);
+			//print_array(cmd,subsize);			
+
+			int childrv;
+			
+			
+			//char *cmd[] = { "/bin/ls", "-ltr", ".", NULL };
+			if (strcmp(cmd[0],"exit")==0) {
+				e=1;
+			}	
+			if (strcmp(cmd[0],"mode")==0) {
+				if (subsize==1) {
+					printf("sequential");
+				}
+				else if (strcmp(cmd[1],"parallel")||strcmp(cmd[1],"p"))
+					{output=1;}
+			}			
+			else { pid_t pid = fork();
+			if (pid==0) {
+				//printf("%s\n", argv[0]);
+				childrv = execv(cmd[0], cmd);
+				if (childrv<0) {
+					fprintf(stderr, "execv failed: %s\n", strerror(1));
+				}
+			} else {
+				wait(&childrv);
+				//printf("Child process finished\n");
+			} }
+		} //end sequential for loop
+		if (e==1) {
+			exit(0);
+		}
+		return output;
+}
+
+int run_par(char** argv, int size) {
+	int e=0;	
+	int output = 1;
+	for (int i=0;i<size; i++) {
+			int subsize = size_of_array2(argv[i]);			
+			char** cmd = (char**) malloc(sizeof(char*)*(subsize+1));
+			//printf("%d\n",subsize);
+			make_array2(argv[i],cmd,subsize);
+			//print_array(cmd,subsize);			
+
+			int childrv;
+			
+			
+			//char *cmd[] = { "/bin/ls", "-ltr", ".", NULL };
+			if (strcmp(cmd[0],"exit")==0) {
+				e=1;
+			}	
+			if (strcmp(cmd[0],"mode")==0) {
+				if (subsize==1) {
+					printf("parallel");
+				}
+				else if (strcmp(cmd[1],"sequential")||strcmp(cmd[1],"s"))
+					{output=0;}
+			}			
+			else { pid_t pid = fork();
+			if (pid==0) {
+				//printf("%s\n", argv[0]);
+				childrv = execv(cmd[0], cmd);
+				if (childrv<0) {
+					fprintf(stderr, "execv failed: %s\n", strerror(1));
+				}
+			} 
+		}
+		} //end par for loop
+		if (e==1) {
+			exit(0);
+		}
+		return output;
+}
+
+
+
 int main(int argc, char **argv) {
 	char prompt[] = "prompt> ";	
 	printf("%s",prompt);
 	fflush(stdout);
-	
+	int m=0; //keep track of mode
 	char buffer[1024];
 	while (fgets(buffer, 1024, stdin) != NULL) {
 		printf("%s",prompt);
@@ -71,22 +179,23 @@ int main(int argc, char **argv) {
 		int size = size_of_array(buffer);		
 		char** argv = (char**) malloc(sizeof(char*)*(size+1));
 		make_array(buffer,argv,size);		
-		//		print_array(argv,size);
+		
+		//print_array(argv,size);
+		//printf("%d\n", size);
 
-		int childrv;
-		pid_t pid = fork();
-
-		if (pid==0) {
-			printf("send it");
-			childrv = execv(argv[0], argv);
-		} else {
-			wait(&childrv);
-			printf("Child process finished\n");
+		
+		
+		if (m==0) {
+			m = run_sequential(argv,size);
 		}
+		
+		else if (m==1) {
+			m = run_par(argv,size);
+		}
+		
 	
-		
-		
-	}
+
+	} // end shell while loop
 	
     return 0;
 }
