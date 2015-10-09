@@ -22,18 +22,19 @@ struct node {
 //##################
 
 struct node * insert_head(pid_t pid, int childrv, char**cmd, struct node *head) {
-	printf("in insert_head \n");	
+	//printf("in insert_head \n");	
 	head = (struct node *)malloc(sizeof(struct node));
 	head->pid = pid;
 	head->next = NULL;
 	head->cmd = cmd;
+	head->childrv = childrv;
 	return head;	
 }
 
 //#####################
 
 struct node * append(pid_t pid, int childrv, char**cmd, struct node *head)	{
-	printf("in append \n");
+	//printf("in append \n");
 	struct node *new_node = (struct node *)malloc(sizeof(struct node));
 	if(head == NULL)
 		{
@@ -41,7 +42,7 @@ struct node * append(pid_t pid, int childrv, char**cmd, struct node *head)	{
 		}
 	else	{
     	struct node * current = head;
-    	while (current->next != NULL) {
+    	while (current->next != NULL) { //current = last node in list
         current = current->next;
     	}
 	
@@ -51,6 +52,7 @@ struct node * append(pid_t pid, int childrv, char**cmd, struct node *head)	{
 		new_node->pid = pid;
 		new_node->next = NULL;
 		new_node->cmd = cmd;
+		new_node->childrv = childrv;
 		
 	}
 	return new_node;
@@ -195,7 +197,7 @@ int run_par(char** argv, int size) {
 				e=1;
 			}
 			else { 
-				printf("about to fork\n");
+				//printf("about to fork\n");
 				pid_t pid = fork();
 				process_count++; 
 					if (pid==0) {                              //children
@@ -208,23 +210,28 @@ int run_par(char** argv, int size) {
 							}	
 					}
 				else	{		//parent process
-					head = append(pid, childrv, cmd, head);
-					printf("calling append from p\n");
+					if(head == NULL)	{					
+						head = append(pid, childrv, cmd, head);
+					}
+					else {append(pid, childrv, cmd, head);}
+					//printf("calling append from p\n");
 				}
 			}
 	}
 	if(head != NULL)	{	
 		struct node * current_node = head;	
 		while(1) 	{  //calls wait for all children
-			waitpid(current_node->pid, &current_node->childrv, WNOHANG);
+			waitpid(-1, &current_node->childrv, WNOHANG);
 			printf("%s%s%s", "*process ", *(current_node->cmd), " finished*\n"); 
 			if(current_node -> next != NULL)	{
+				//printf("advanced node\n");
 				current_node = current_node -> next;
 			}
 			else {
 				break;
 			}
 		}
+		//*********NEED TO CLEAR AND FREE LIST HERE**************
 	}
 	else { //head = NULL
 		printf("currnode = NULL\n");
