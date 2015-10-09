@@ -19,22 +19,44 @@ struct node {
 	struct node *next;
 };
 
-struct node * append(pid_t pid, int childrv, char**cmd, struct node *last_node)	{
+//##################
+
+struct node * insert_head(pid_t pid, int childrv, char**cmd, struct node *head) {
+	printf("in insert_head \n");	
+	head = (struct node *)malloc(sizeof(struct node));
+	head->pid = pid;
+	head->next = NULL;
+	head->cmd = cmd;
+	return head;	
+}
+
+//#####################
+
+struct node * append(pid_t pid, int childrv, char**cmd, struct node *head)	{
+	printf("in append \n");
 	struct node *new_node = (struct node *)malloc(sizeof(struct node));
-	new_node->pid = pid;
-	new_node->next = NULL;
-	new_node->cmd = cmd;
-	last_node->next = new_node;
+	if(head == NULL)
+		{
+			new_node = insert_head(pid, childrv, cmd, head);
+		}
+	else	{
+    	struct node * current = head;
+    	while (current->next != NULL) {
+        current = current->next;
+    	}
+	
+
+		
+		current->next = new_node;
+		new_node->pid = pid;
+		new_node->next = NULL;
+		new_node->cmd = cmd;
+		
+	}
 	return new_node;
 }
 
-void insert_head(pid_t pid, int childrv, char**cmd, struct node **head) {
-	struct node *new_node = (struct node *)malloc(sizeof(struct node));
-	new_node->pid = pid;
-	new_node->next = *head;
-	new_node->cmd = cmd;
-	*head = new_node;	
-}
+//######################
 
 void make_array(char* buf, char** argv, int size) {
 	char* token;
@@ -145,8 +167,7 @@ int run_sequential(char** argv, int size) {
 int run_par(char** argv, int size) {
 	//printf("in parallel\n");
 	struct node *head = NULL;
-	struct node *curr_node = head; //needed to use append instead of insert_head for ll
-	
+
 	
 	int e=0;	
 	int output = 1;
@@ -174,41 +195,44 @@ int run_par(char** argv, int size) {
 				e=1;
 			}
 			else { 
-
+				printf("about to fork\n");
 				pid_t pid = fork();
 				process_count++; 
 					if (pid==0) {                              //children
 						//printf("%s\n", argv[0]);
 						childrv = execv(cmd[0], cmd);
+						
 							if (childrv<0) {
 								process_count--;
 								fprintf(stderr, "execv failed: %s\n", strerror(1));
-							}
-							/*if(head == NULL) { 
-								insert_head(pid, childrv, cmd, &head);
-							}
-							else 	{
-								curr_node = append(pid, childrv, cmd, curr_node);
-							}*/
-							insert_head(pid, childrv, cmd, &head);
-					} 
+							}	
+					}
+				else	{		//parent process
+					append(pid, 0, cmd, head);
+					printf("calling append from p\n");
+				}
 			}
 	}
-	//printf("%s%d", "about to enter for loop w/ count = ", process_count);
-	for(int i = 0; i < process_count; i++) 	{  //calls wait for all children
-		//printf("in for loop\n");
-		curr_node = head;			
-		if(curr_node !=NULL)	{
-			printf("about to wait \n");
-			waitpid(curr_node->pid, &curr_node->childrv, WNOHANG);
-			printf("wait finished \n");
-			//printf("%s%d%s", "process ", &curr_node->childr, "finished\n");
-			curr_node = curr_node -> next; 
+	if(head != NULL)	{	
+		struct node * current_node = head;	
+		while(current_node -> next != NULL) 	{  //calls wait for all children
+			//printf("in for loop\n");			
+			if(current_node !=NULL)	{
+				printf("about to wait \n");
+				waitpid(current_node->pid, &current_node->childrv, WNOHANG);
+				printf("wait finished \n");
+				//printf("%s%d%s", "process ", &curr_node->childr, "finished\n"); 
 		}
-		else {
-			break;
+			else {
+				break;
+			}
+			current_node = current_node -> next;
 		}
 	}
+	else { //head = NULL
+		printf("currnode = NULL\n");
+	}
+
 			 
 
 
