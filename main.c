@@ -179,7 +179,7 @@ int run_par(char** argv, int size) {
 			
 			make_array2(argv[i],cmd,subsize);
 		
-			int childrv;
+			int childrv = 0;
 
 				
 			if (strcmp(cmd[0],"mode")==0) {
@@ -208,25 +208,22 @@ int run_par(char** argv, int size) {
 							}	
 					}
 				else	{		//parent process
-					head = append(pid, 0, cmd, head);
+					head = append(pid, childrv, cmd, head);
 					printf("calling append from p\n");
 				}
 			}
 	}
 	if(head != NULL)	{	
 		struct node * current_node = head;	
-		while(current_node -> next != NULL) 	{  //calls wait for all children
-			//printf("in for loop\n");			
-			if(current_node !=NULL)	{
-				printf("about to wait \n");
-				waitpid(current_node->pid, &current_node->childrv, WNOHANG);
-				printf("wait finished \n");
-				//printf("%s%d%s", "process ", &curr_node->childr, "finished\n"); 
-		}
+		while(1) 	{  //calls wait for all children
+			waitpid(current_node->pid, &current_node->childrv, WNOHANG);
+			printf("%s%s%s", "*process ", *(current_node->cmd), " finished*\n"); 
+			if(current_node -> next != NULL)	{
+				current_node = current_node -> next;
+			}
 			else {
 				break;
 			}
-			current_node = current_node -> next;
 		}
 	}
 	else { //head = NULL
