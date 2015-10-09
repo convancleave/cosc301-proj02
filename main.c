@@ -12,7 +12,29 @@
 #include <signal.h>
 //Conor Oliver, Connor Van Cleave, Matt Condit
 
+struct node {
+	pid_t pid;
+	int childrv;
+	char** cmd;
+	struct node *next;
+};
 
+struct node * append(pid_t pid, int childrv, char**cmd, struct node *last_node)	{
+	struct node *new_node = (struct node *)malloc(sizeof(struct node));
+	new_node->pid = pid;
+	new_node->next = NULL;
+	new_node->cmd = cmd;
+	last_node->next = new_node;
+	return new_node;
+}
+
+void insert_head(pid_t pid, int childrv, char**cmd, struct node **head) {
+	struct node *new_node = (struct node *)malloc(sizeof(struct node));
+	new_node->pid = pid;
+	new_node->next = *head;
+	new_node->cmd = cmd;
+	*head = new_node;	
+}
 
 void make_array(char* buf, char** argv, int size) {
 	char* token;
@@ -75,6 +97,7 @@ void print_array(char** a, int size) {
 }
 
 int run_sequential(char** argv, int size) {
+	printf("in sequential\n");	
 	int e=0;	
 	int output = 0;
 	for (int i=0;i<size; i++) {
@@ -95,7 +118,7 @@ int run_sequential(char** argv, int size) {
 				if (subsize==1) {
 					printf("sequential");
 				}
-				else if (strcmp(cmd[1],"parallel")||strcmp(cmd[1],"p"))
+				else if (strcmp(cmd[1],"parallel") == 0||strcmp(cmd[1],"p")== 0)
 					{output=1;}
 			}			
 			else { pid_t pid = fork();
@@ -113,31 +136,27 @@ int run_sequential(char** argv, int size) {
 		if (e==1) {
 			exit(0);
 		}
+		if(output == 1) {printf("changed to p\n");}
 		return output;
 }
 
 int run_par(char** argv, int size) {
+	printf("in parallel\n");
+	struct node *head = NULL;
+	struct node *curr_node = head; //needed to use append instead of insert_head for ll
+	
+	
 	int e=0;	
 	int output = 1;
-
-	while(1)	{
-		for (int i=0;i<size; i++) {
-		int subsize = size_of_array2(argv[i]);
-		char			
-		char** cmd = (char**) malloc(sizeof(char*)*(subsize+1));
-		//printf("%d\n",subsize);
-		make_array2(argv[i],cmd,subsize);
-		//print_array(cmd,subsize);	
-		}
-
-	}
-
+	int process_count = 0;
+	for (int i=0;i<size; i++) {
+			int subsize = size_of_array2(argv[i]);			
+			char** cmd = (char**) malloc(sizeof(char*)*(subsize+1));
 			
-
+			make_array2(argv[i],cmd,subsize);
+		
 			int childrv;
-			
-			
-			//char *cmd[] = { "/bin/ls", "-ltr", ".", NULL };
+
 			if (strcmp(cmd[0],"exit")==0) {
 				e=1;
 			}	
@@ -145,19 +164,38 @@ int run_par(char** argv, int size) {
 				if (subsize==1) {
 					printf("parallel");
 				}
-				else if (strcmp(cmd[1],"sequential")||strcmp(cmd[1],"s"))
+				else if (strcmp(cmd[1],"sequential") == 0||strcmp(cmd[1],"s") == 0)
 					{output=0;}
-			}			
-			else { pid_t pid = fork();
-			if (pid==0) {
-				//printf("%s\n", argv[0]);
-				childrv = execv(cmd[0], cmd);
-				if (childrv<0) {
-					fprintf(stderr, "execv failed: %s\n", strerror(1));
-				}
-			} 
+			}
+			
+			else { 
+				pid_t pid = fork();
+					if (pid==0) {                              //children
+						//printf("%s\n", argv[0]);
+						childrv = execv(cmd[0], cmd);
+							if (childrv<0) {
+								fprintf(stderr, "execv failed: %s\n", strerror(1));
+							}
+							if(head == NULL) { 
+								insert_head(pid, childrv, cmd, &head);
+							}
+							else 	{
+								curr_node = append(pid, childrv, cmd, curr_node);
+							}
+					process_count++; 
+					} 
+			}
 		}
-		} //end par for loop
+		for(int i = 0; i < process_count; i++) 	{  //calls wait for all children
+			curr_node = head;			
+			if(curr_node !=NULL)	{
+				waitpid(curr_node->pid, &curr_node->childrv, WNOHANG);
+			}
+			curr_node = curr_node -> next;
+		}
+			 
+
+
 		if (e==1) {
 			exit(0);
 		}
@@ -200,8 +238,8 @@ int main(int argc, char **argv) {
 		
 		else if (m==1) {
 			m = run_par(argv,size);
-			pid_t pid;
-			int num;
+			//pid_t pid;
+			//int num;
 			/*while ((pid = waitpid(-1, &stat, WNOHANG))>0) {
 				printf("child process finished /n");
 			}*/
