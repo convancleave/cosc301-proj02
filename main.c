@@ -111,15 +111,17 @@ int run_sequential(char** argv, int size) {
 			
 			
 			//char *cmd[] = { "/bin/ls", "-ltr", ".", NULL };
-			if (strcmp(cmd[0],"exit")==0) {
-				e=1;
-			}	
+				
 			if (strcmp(cmd[0],"mode")==0) {
 				if (subsize==1) {
 					printf("sequential\n");
 				}
 				else if (strcmp(cmd[1],"parallel") == 0||strcmp(cmd[1],"p")== 0)
 					{output=1;}
+			}
+			
+			else if (strcmp(cmd[0],"exit")==0) {
+				e=1;
 			}			
 			else { pid_t pid = fork();
 			if (pid==0) {
@@ -157,17 +159,18 @@ int run_par(char** argv, int size) {
 		
 			int childrv;
 
-			if (strcmp(cmd[0],"exit")==0) {
-				e=1;
-			}	
+				
 			if (strcmp(cmd[0],"mode")==0) {
 				if (subsize==1) {
-					printf("parallel");
+					printf("parallel\n");
 				}
 				else if (strcmp(cmd[1],"sequential\n") == 0||strcmp(cmd[1],"s") == 0)
 					{output=0;}
 			}
 			
+			else if (strcmp(cmd[0],"exit")==0) {
+				e=1;
+			}
 			else { 
 				pid_t pid = fork();
 					if (pid==0) {                              //children
@@ -189,7 +192,10 @@ int run_par(char** argv, int size) {
 		for(int i = 0; i < process_count; i++) 	{  //calls wait for all children
 			curr_node = head;			
 			if(curr_node !=NULL)	{
+				printf("about to wait \n");
 				waitpid(curr_node->pid, &curr_node->childrv, WNOHANG);
+				printf("wait finished \n");
+				//printf("%s%d%s", "process ", &curr_node->childr, "finished\n"); 
 			}
 			curr_node = curr_node -> next;
 		}
