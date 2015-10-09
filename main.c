@@ -19,6 +19,11 @@ struct node {
 	struct node *next;
 };
 
+struct wordnode {
+	char word[256];
+	struct wordnode *next;
+};
+
 //##################
 
 struct node * insert_head(pid_t pid, int childrv, char**cmd, struct node *head) {
@@ -58,15 +63,27 @@ struct node * append(pid_t pid, int childrv, char**cmd, struct node *head)	{
 	return new_node;
 }
 
-void free_list(struct node *head)
+void free_list(struct node *wordlist)
 {
-    struct node * victim = head;
+    struct node * victim = wordlist;
 
-    while (head -> next != NULL)
+    while (wordlist -> next != NULL)
     {
-        victim = head;
-        head = head -> next;
-        free(victim);
+        victim = wordlist->next;
+        free(wordlist);	
+		wordlist = victim;
+    }
+}
+
+void free_wordlist(struct wordnode *wordlist)
+{
+    struct wordnode * victim = wordlist;
+
+    while (wordlist -> next != NULL)
+    {
+        victim = wordlist->next;
+        free(wordlist);	
+		wordlist = victim;
     }
 }
 
@@ -108,6 +125,7 @@ int size_of_array(char* buf) {
 	for (token=strtok(cop,";"); token!=NULL;token=strtok(NULL,";")) {
 		count++;
 	}
+	free(cop);
 	return count;
 }
 
@@ -132,7 +150,7 @@ void print_array(char** a, int size) {
 	}
 }
 
-int run_sequential(char** argv, int size) {
+int run_sequential(char** argv, int size, struct wordnode* shell_list) {
 	//printf("in sequential\n");	
 	int e=0;	
 	int output = 0;
@@ -158,8 +176,23 @@ int run_sequential(char** argv, int size) {
 			
 			else if (strcmp(cmd[0],"exit")==0) {
 				e=1;
-			}			
-			else { pid_t pid = fork();
+			}
+						
+			else {
+			while (shell_list->next !=NULL) {
+				char* concat = strcat("/",cmd[0]);				
+				concat =  strcat(shell_list->word,concat);
+				struct stat statresult;
+				int rv = stat(concat, &statresult);
+				if (rv < 0) {
+    				shell_list = shell_list->next; //not found
+				}
+				else {
+					cmd[0] = concat;
+					break;
+				}
+			}
+			pid_t pid = fork();
 			if (pid==0) {
 				//printf("%s\n", argv[0]);
 				childrv = execv(cmd[0], cmd);
@@ -170,11 +203,13 @@ int run_sequential(char** argv, int size) {
 				wait(&childrv);
 				//printf("Child process finished\n");
 			} }
+		free(cmd);
 		} //end sequential for loop
 		if (e==1) {
 			exit(0);
 		}
 		if(output == 1) {printf("changed to p\n");}
+		
 		return output;
 }
 
@@ -230,6 +265,7 @@ int run_par(char** argv, int size) {
 				}
 			}
 	}
+	
 	if(head != NULL)	{	
 		struct node * current_node = head;	
 		while(1) 	{  //calls wait for all children
@@ -240,6 +276,7 @@ int run_par(char** argv, int size) {
 				current_node = current_node -> next;
 			}
 			else {
+				free(current_node);
 				break;
 			}
 		}
@@ -255,14 +292,71 @@ int run_par(char** argv, int size) {
 		if (e==1) {
 			exit(0);
 		}
+		
 	//*********NEED TO CLEAR AND FREE LIST HERE**************
-		free_list(head); //might work haven't tested extensively
+		free_list(head); 
 		return output;
+} // end run par
+
+
+
+
+struct wordnode *load_commands(const char* filename, int* num_words) {
+	FILE *f = fopen(filename,"r");
+	int ch = fgetc(f);
+	struct wordnode *first_word;
+	first_word = (struct wordnode*) malloc( sizeof(struct wordnode));
+	int i = 0;
+	int num = *num_words;
+
+	//to get first word
+	while (ch!= '\n') {
+		first_word->word[i] =  ch;
+		i++;
+		ch = fgetc(f);
+	}
+
+	num++;
+	first_word->word[i] = '\0';
+	ch = fgetc(f);
+	struct wordnode *previous_word;
+	previous_word = (struct wordnode*) malloc( sizeof(struct wordnode));
+	previous_word = first_word;
+
+	while (! feof(f)) {
+		struct wordnode* current_word = (struct wordnode*) malloc( sizeof(struct wordnode));
+		i = 0;
+		while (ch!= '\n') {
+			current_word->word[i] = ch;
+			i++;
+			ch=fgetc(f);
+		}	
+		current_word->word[i] = '\0';
+		previous_word->next = current_word;
+		previous_word = current_word;
+		ch = fgetc(f);
+		num++;
+	}
+	*num_words = num;
+	return first_word;
+	
 }
 
 
 
 int main(int argc, char **argv) {
+	// test shell config	
+	struct stat shelltest;
+	struct wordnode* commands;
+	int rv = stat("shell-config", &shelltest);
+	if (rv < 0) {
+   	 	printf("shell-config DNE. Please enter full path");
+	}	
+	else {
+		int num_words = 0;	
+		commands = load_commands("shell-config",&num_words);
+	}
+		
 	char prompt[] = "prompt> ";	
 	printf("%s",prompt);
 	fflush(stdout);
@@ -292,7 +386,7 @@ int main(int argc, char **argv) {
 		
 		
 		if (m==0) {
-			m = run_sequential(argv,size);
+			m = run_sequential(argv,size,commands);
 		}
 		
 		else if (m==1) {
@@ -304,12 +398,14 @@ int main(int argc, char **argv) {
 			}*/
 		  
 		}
+	
 		
 	
 	printf("%s",prompt);
 
 	} // end shell while loop
-	
+	free(argv);
+	free_wordlist(commands);
     return 0;
 }
 
