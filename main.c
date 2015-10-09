@@ -153,6 +153,7 @@ int run_par(char** argv, int size) {
 	int process_count = 0;
 	for (int i=0;i<size; i++) {
 			int subsize = size_of_array2(argv[i]);			
+
 			char** cmd = (char**) malloc(sizeof(char*)*(subsize+1));
 			
 			make_array2(argv[i],cmd,subsize);
@@ -167,38 +168,47 @@ int run_par(char** argv, int size) {
 				else if (strcmp(cmd[1],"sequential\n") == 0||strcmp(cmd[1],"s") == 0)
 					{output=0;}
 			}
+
 			
 			else if (strcmp(cmd[0],"exit")==0) {
 				e=1;
 			}
 			else { 
+
 				pid_t pid = fork();
+				process_count++; 
 					if (pid==0) {                              //children
 						//printf("%s\n", argv[0]);
 						childrv = execv(cmd[0], cmd);
 							if (childrv<0) {
+								process_count--;
 								fprintf(stderr, "execv failed: %s\n", strerror(1));
 							}
-							if(head == NULL) { 
+							/*if(head == NULL) { 
 								insert_head(pid, childrv, cmd, &head);
 							}
 							else 	{
 								curr_node = append(pid, childrv, cmd, curr_node);
-							}
-					process_count++; 
+							}*/
+							insert_head(pid, childrv, cmd, &head);
 					} 
 			}
+	}
+	//printf("%s%d", "about to enter for loop w/ count = ", process_count);
+	for(int i = 0; i < process_count; i++) 	{  //calls wait for all children
+		//printf("in for loop\n");
+		curr_node = head;			
+		if(curr_node !=NULL)	{
+			printf("about to wait \n");
+			waitpid(curr_node->pid, &curr_node->childrv, WNOHANG);
+			printf("wait finished \n");
+			//printf("%s%d%s", "process ", &curr_node->childr, "finished\n");
+			curr_node = curr_node -> next; 
 		}
-		for(int i = 0; i < process_count; i++) 	{  //calls wait for all children
-			curr_node = head;			
-			if(curr_node !=NULL)	{
-				printf("about to wait \n");
-				waitpid(curr_node->pid, &curr_node->childrv, WNOHANG);
-				printf("wait finished \n");
-				//printf("%s%d%s", "process ", &curr_node->childr, "finished\n"); 
-			}
-			curr_node = curr_node -> next;
+		else {
+			break;
 		}
+	}
 			 
 
 
