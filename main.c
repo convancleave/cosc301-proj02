@@ -58,6 +58,18 @@ struct node * append(pid_t pid, int childrv, char**cmd, struct node *head)	{
 	return new_node;
 }
 
+void free_list(struct node *head)
+{
+    struct node * victim = head;
+
+    while (head -> next != NULL)
+    {
+        victim = head;
+        head = head -> next;
+        free(victim);
+    }
+}
+
 //######################
 
 void make_array(char* buf, char** argv, int size) {
@@ -221,7 +233,7 @@ int run_par(char** argv, int size) {
 	if(head != NULL)	{	
 		struct node * current_node = head;	
 		while(1) 	{  //calls wait for all children
-			waitpid(-1, &current_node->childrv, WNOHANG);
+			waitpid(current_node -> pid, &current_node->childrv, 0); //for stage 2: call waitpid with WNOHANG as option, pid = waitpid("","",WNHOHANG)
 			printf("%s%s%s", "*process ", *(current_node->cmd), " finished*\n"); 
 			if(current_node -> next != NULL)	{
 				//printf("advanced node\n");
@@ -231,7 +243,7 @@ int run_par(char** argv, int size) {
 				break;
 			}
 		}
-		//*********NEED TO CLEAR AND FREE LIST HERE**************
+		
 	}
 	else { //head = NULL
 		printf("currnode = NULL\n");
@@ -243,6 +255,8 @@ int run_par(char** argv, int size) {
 		if (e==1) {
 			exit(0);
 		}
+	//*********NEED TO CLEAR AND FREE LIST HERE**************
+		free_list(head); //might work haven't tested extensively
 		return output;
 }
 
