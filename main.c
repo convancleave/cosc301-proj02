@@ -97,7 +97,7 @@ void print_array(char** a, int size) {
 }
 
 int run_sequential(char** argv, int size) {
-	printf("in sequential\n");	
+	//printf("in sequential\n");	
 	int e=0;	
 	int output = 0;
 	for (int i=0;i<size; i++) {
@@ -116,7 +116,7 @@ int run_sequential(char** argv, int size) {
 			}	
 			if (strcmp(cmd[0],"mode")==0) {
 				if (subsize==1) {
-					printf("sequential");
+					printf("sequential\n");
 				}
 				else if (strcmp(cmd[1],"parallel") == 0||strcmp(cmd[1],"p")== 0)
 					{output=1;}
@@ -141,7 +141,7 @@ int run_sequential(char** argv, int size) {
 }
 
 int run_par(char** argv, int size) {
-	printf("in parallel\n");
+	//printf("in parallel\n");
 	struct node *head = NULL;
 	struct node *curr_node = head; //needed to use append instead of insert_head for ll
 	
@@ -164,7 +164,7 @@ int run_par(char** argv, int size) {
 				if (subsize==1) {
 					printf("parallel");
 				}
-				else if (strcmp(cmd[1],"sequential") == 0||strcmp(cmd[1],"s") == 0)
+				else if (strcmp(cmd[1],"sequential\n") == 0||strcmp(cmd[1],"s") == 0)
 					{output=0;}
 			}
 			
@@ -208,10 +208,11 @@ int main(int argc, char **argv) {
 	char prompt[] = "prompt> ";	
 	printf("%s",prompt);
 	fflush(stdout);
+
 	int m=0; //keep track of mode
 	char buffer[1024];
 	while (fgets(buffer, 1024, stdin) != NULL) {
-		printf("%s",prompt);
+						
 		
 		//handles comments, but only at the end of command		
 		int i=0;	
@@ -243,10 +244,11 @@ int main(int argc, char **argv) {
 			/*while ((pid = waitpid(-1, &stat, WNOHANG))>0) {
 				printf("child process finished /n");
 			}*/
-		
+		  
 		}
 		
 	
+	printf("%s",prompt);
 
 	} // end shell while loop
 	
