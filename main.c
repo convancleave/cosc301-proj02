@@ -11,7 +11,7 @@
 #include <poll.h>
 #include <signal.h>
 //Conor Oliver, Connor Van Cleave, Matt Condit
-
+//
 struct node {
 	pid_t pid;
 	int childrv;
@@ -66,12 +66,14 @@ struct node * append(pid_t pid, int childrv, char**cmd, struct node *head)	{
 void free_list(struct node *wordlist)
 {
     struct node * victim = wordlist;
-
-    while (wordlist -> next != NULL)
-    {
-        victim = wordlist->next;
-        free(wordlist);	
-		wordlist = victim;
+	
+	if(wordlist != NULL)	{
+	    while (wordlist -> next != NULL)
+		{
+		    victim = wordlist->next;
+		    free(wordlist);	
+			wordlist = victim;
+		}
     }
 }
 
@@ -179,25 +181,41 @@ int run_sequential(char** argv, int size, struct wordnode* shell_list) {
 			}
 						
 			else {
-			while (shell_list->next !=NULL) {
-				char* concat = strcat("/",cmd[0]);				
-				concat =  strcat(shell_list->word,concat);
-				struct stat statresult;
-				int rv = stat(concat, &statresult);
-				if (rv < 0) {
-    				shell_list = shell_list->next; //not found
-				}
-				else {
-					cmd[0] = concat;
-					break;
+	/*		printf("%s\n", shell_list->word);
+			if(shell_list != NULL)	{
+				while (shell_list !=NULL) {
+					printf("in loop \n");
+					char* concat = NULL;
+				 	strcpy(concat, "/");
+					concat = strcat(concat, cmd[0]);
+					printf("%s\n", concat);				
+					concat = strcat(shell_list->word,concat);
+					printf("%s\n", concat);		
+					struct stat statresult;
+					int rv = stat(concat, &statresult);
+					if (rv < 0) {
+						printf("doesnt exist \n");
+						if(shell_list -> next != NULL)	{
+							shell_list = shell_list->next; //not found
+						}
+						else	{
+						break; //command not going to be found
+						}
+					}
+					else {
+						printf("%s%s\n", cmd[0], "= concat");
+						strcpy(cmd[0], concat);
+						break;
+					}
 				}
 			}
+			else {printf("shell_list = null\n");};		*/
 			pid_t pid = fork();
 			if (pid==0) {
 				//printf("%s\n", argv[0]);
 				childrv = execv(cmd[0], cmd);
 				if (childrv<0) {
-					fprintf(stderr, "execv failed: %s\n", strerror(1));
+					fprintf(stderr, "execv failed: %s%s%s%s\n"," ", cmd[0], " ", strerror(1));
 				}
 			} else {
 				wait(&childrv);
@@ -283,7 +301,7 @@ int run_par(char** argv, int size) {
 		
 	}
 	else { //head = NULL
-		printf("currnode = NULL\n");
+		//printf("currnode = NULL\n");
 	}
 
 			 
@@ -302,7 +320,7 @@ int run_par(char** argv, int size) {
 
 
 struct wordnode *load_commands(const char* filename, int* num_words) {
-	FILE *f = fopen(filename,"r");
+	/*FILE *f = fopen(filename,"r");
 	int ch = fgetc(f);
 	struct wordnode *first_word;
 	first_word = (struct wordnode*) malloc( sizeof(struct wordnode));
@@ -337,7 +355,11 @@ struct wordnode *load_commands(const char* filename, int* num_words) {
 		ch = fgetc(f);
 		num++;
 	}
-	*num_words = num;
+	*num_words = num;*/
+	
+	struct wordnode * first_word = (struct wordnode*) malloc( sizeof(struct wordnode));
+	strcpy(first_word->word, "/bin");
+	first_word->next = NULL;
 	return first_word;
 	
 }
@@ -347,7 +369,7 @@ struct wordnode *load_commands(const char* filename, int* num_words) {
 int main(int argc, char **argv) {
 	// test shell config	
 	struct stat shelltest;
-	struct wordnode* commands;
+	struct wordnode* commands; //head for list of possible paths to commands
 	int rv = stat("shell-config", &shelltest);
 	if (rv < 0) {
    	 	printf("shell-config DNE. Please enter full path");
@@ -355,6 +377,7 @@ int main(int argc, char **argv) {
 	else {
 		int num_words = 0;	
 		commands = load_commands("shell-config",&num_words);
+		//commands = "/bin/";
 	}
 		
 	char prompt[] = "prompt> ";	
